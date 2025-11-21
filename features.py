@@ -54,6 +54,52 @@ def analyze_email(text):
 
     """
     features = {}
+    import re
+from textblob import TextBlob
+
+def analyze_email(text):
+    """
+    Extract linguistic, sentiment, and structure-based features from email text.
+    Returns a dictionary of detected features.
+    """
+
+    features = {}
+
+    # 1. Lowercase the text for easier processing
+    clean_text = text.lower()
+
+    # 2. Urgent / Threatening keywords
+    urgency_words = ['urgent', 'immediately', 'suspended', 'verify', 
+                     'alert', 'warning', 'limited time', 'account locked']
+    features['urgent_words'] = any(word in clean_text for word in urgency_words)
+
+    # 3. Phishing intent keywords
+    phishing_words = ['password', 'bank', 'update', 'security', 'click here', 
+                      'confirm', 'reset', 'unlock']
+    features['phishing_words'] = any(word in clean_text for word in phishing_words)
+
+    # 4. check no of links inside the email
+    url_regex = r'(http[s]?://[^\s]+)'
+    features['link_count'] = len(re.findall(url_regex, text))
+
+    # 5. Sentiment polarity (negative/threatening emails are often phishing)
+    sentiment = TextBlob(text).sentiment.polarity
+    features['sentiment'] = sentiment
+
+    # 6. checking if HTML content is present
+    html_regex = r'<[^>]+>'
+    features['contains_html'] = bool(re.search(html_regex, text))
+
+    # 7. Excessive punctuation (like !!!)
+    features['exclamation_count'] = clean_text.count('!')
+
+    # 8. Suspicious sender spoof (if "from:" exists)
+    spoof_regex = r'from:\s.*@(?!gmail\.com|yahoo\.com|outlook\.com)'
+    features['possible_spoof'] = bool(re.search(spoof_regex, clean_text))
+
+    # 9. Word count (short emails with high urgency → suspicious)
+    features['word_count'] = len(clean_text.split())
+
     return features
 
 def calculate_score(features):
