@@ -54,6 +54,21 @@ def analyze_url(url):
     # 8. HTTPS token
     features['HTTPS_token'] = 1 if "https" in url.lower() else 0
 
+    # Fill missing columns with 0 (to match training dataset)
+    all_cols = [
+        'index','having_IPhaving_IP_Address','URLURL_Length','Shortining_Service',
+        'having_At_Symbol','double_slash_redirecting','Prefix_Suffix','having_Sub_Domain',
+        'SSLfinal_State','Domain_registeration_length','Favicon','port','HTTPS_token',
+        'Request_URL','URL_of_Anchor','Links_in_tags','SFH','Submitting_to_email',
+        'Abnormal_URL','Redirect','on_mouseover','RightClick','popUpWidnow','Iframe',
+        'age_of_domain','DNSRecord','web_traffic','Page_Rank','Google_Index',
+        'Links_pointing_to_page','Statistical_report'
+    ]
+
+    for col in all_cols:
+        if col not in features:
+            features[col] = 0
+
     # 9. Statistical report — simple heuristic
     suspicious_keywords = ["login", "secure", "verify", "update", "bank"]
     features['Statistical_report'] = 1 if any(w in url.lower() for w in suspicious_keywords) else 0
