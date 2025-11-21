@@ -6,166 +6,135 @@ from textblob import TextBlob
 import matplotlib.pyplot as plt
 import pandas as pd
 
-
-# Load ML Models
-
-"""url_model = joblib.load("models/url_model.pkl")        # RandomForest model"""
-email_model = joblib.load("models/email_model.pkl")    # Logistic Regression model
-email_tfidf = joblib.load("models/email_tfidf.pkl")    # TF-IDF vectorizer
-
+# ============================================
+# LOAD EMAIL ML MODEL + TF-IDF
+# ============================================
+email_model = joblib.load("models/email_model.pkl")
+email_tfidf = joblib.load("models/email_tfidf.pkl")
 
 
-# URL Heuristic Feature Extraction
-# NOTE: Your URL dataset is numeric, but your runtime input is raw text.
-# So we re-create numeric features from the URL using heuristics.
-
+# ============================================
+# URL HEURISTIC ANALYSIS (NO ML)
+# ============================================
 def analyze_url(url):
     features = {}
-    
-    features["index"] = 0     # required to match training dataset columns(First error fixed)
+
+    # Important: dataset had index column
+    features['index'] = 0
 
     # 1. IP-based URL
     ip_pattern = r"(\d{1,3}\.){3}\d{1,3}"
     features['having_IPhaving_IP_Address'] = 1 if re.search(ip_pattern, url) else 0
 
-    # 2. URL Length
-    url_length = len(url)
-    features['URLURL_Length'] = 1 if url_length >= 54 else 0
+    # 2. URL length
+    features['URLURL_Length'] = 1 if len(url) >= 54 else 0
 
     # 3. Shortening service
-    shortening_patterns = ["bit.ly", "tinyurl", "goo.gl", "t.co", "ow.ly"]
-    features['Shortining_Service'] = 1 if any(s in url for s in shortening_patterns) else 0
+    shortening_services = ["bit.ly", "tinyurl", "goo.gl", "t.co", "ow.ly"]
+    features['Shortining_Service'] = 1 if any(s in url for s in shortening_services) else 0
 
-    # 4. @ symbol
+    # 4. @ symbol usage → very suspicious
     features['having_At_Symbol'] = 1 if "@" in url else 0
 
-    # 5. //
+    # 5. // redirecting
     features['double_slash_redirecting'] = 1 if url.count("//") > 1 else 0
 
-    # 6. Prefix/Suffix (-)
+    # 6. Prefix-Suffix using "-"
     domain = tldextract.extract(url).domain
     features['Prefix_Suffix'] = 1 if "-" in domain else 0
 
     # 7. Subdomain count
-    subdomain = tldextract.extract(url).subdomain
-    sub_cnt = subdomain.count(".") + 1 if subdomain else 0
-    features['having_Sub_Domain'] = 1 if sub_cnt >= 2 else 0
+    sub = tldextract.extract(url).subdomain
+    sub_count = sub.count(".") + 1 if sub else 0
+    features['having_Sub_Domain'] = 1 if sub_count >= 2 else 0
 
     # 8. HTTPS token
     features['HTTPS_token'] = 1 if "https" in url.lower() else 0
 
-    # Fill missing columns with 0 (to match training dataset)
-    all_cols = [
-        'index','having_IPhaving_IP_Address','URLURL_Length','Shortining_Service',
-        'having_At_Symbol','double_slash_redirecting','Prefix_Suffix','having_Sub_Domain',
-        'SSLfinal_State','Domain_registeration_length','Favicon','port','HTTPS_token',
-        'Request_URL','URL_of_Anchor','Links_in_tags','SFH','Submitting_to_email',
-        'Abnormal_URL','Redirect','on_mouseover','RightClick','popUpWidnow','Iframe',
-        'age_of_domain','DNSRecord','web_traffic','Page_Rank','Google_Index',
-        'Links_pointing_to_page','Statistical_report'
+    # 9. Statistical patterns (common phishing keywords)
+    keywords = ["secure", "login", "verify", "account", "update", "bank"]
+    features['Statistical_report'] = 1 if any(k in url.lower() for k in keywords) else 0
+
+    # === Other dataset columns not usable from URL string → set to 0 ===
+    static_cols = [
+        'SSLfinal_State', 'Domain_registeration_length', 'Favicon', 'port',
+        'Request_URL', 'URL_of_Anchor', 'Links_in_tags', 'SFH', 'Submitting_to_email',
+        'Abnormal_URL', 'Redirect', 'on_mouseover', 'RightClick', 'popUpWidnow',
+        'Iframe', 'age_of_domain', 'DNSRecord', 'web_traffic', 'Page_Rank',
+        'Google_Index', 'Links_pointing_to_page'
     ]
 
-    for col in all_cols:
-        if col not in features:
-            features[col] = 0
-
-    # 9. Statistical report — simple heuristic
-    suspicious_keywords = ["login", "secure", "verify", "update", "bank"]
-    features['Statistical_report'] = 1 if any(w in url.lower() for w in suspicious_keywords) else 0
-
-    # NOTE:
-    # All other dataset fields are website-based (favicon, iframe, DNSRecord...),
-    # which cannot be computed from only the URL string at runtime.
-    # So we set them to safe defaults (0).
-    static_columns = [
-        'SSLfinal_State', 'Domain_registeration_length', 'Favicon', 'port', 'Request_URL',
-        'URL_of_Anchor', 'Links_in_tags', 'SFH', 'Submitting_to_email', 'Abnormal_URL',
-        'Redirect', 'on_mouseover', 'RightClick', 'popUpWidnow', 'Iframe', 'age_of_domain',
-        'DNSRecord', 'web_traffic', 'Page_Rank', 'Google_Index',
-        'Links_pointing_to_page'
-    ]
-
-    for col in static_columns:
+    for col in static_cols:
         features[col] = 0
 
     return features
 
 
-
-# Email Feature Extraction (Heuristics)
-
+# ============================================
+# EMAIL HEURISTIC ANALYSIS
+# ============================================
 def analyze_email(text):
     features = {}
-    clean = text.lower()
+    text_low = text.lower()
 
-    urgency = ['urgent', 'immediately', 'suspended', 'verify', 'alert']
+    urgency_words = ['urgent', 'immediately', 'suspended', 'verify', 'alert']
     phishing_words = ['password', 'bank', 'click', 'confirm', 'update']
 
-    features['urgent_words'] = any(w in clean for w in urgency)
-    features['phishing_words'] = any(w in clean for w in phishing_words)
+    features['urgent_words'] = any(w in text_low for w in urgency_words)
+    features['phishing_words'] = any(w in text_low for w in phishing_words)
 
-    features['exclamation_count'] = clean.count("!")
+    features['exclamation_count'] = text_low.count("!")
     features['contains_html'] = 1 if re.search(r"<[^>]+>", text) else 0
     features['link_count'] = len(re.findall(r"http[s]?://\S+", text))
     features['sentiment'] = TextBlob(text).sentiment.polarity
-    features['word_count'] = len(clean.split())
+    features['word_count'] = len(text_low.split())
 
     return features
 
 
-
-# ML Prediction Functions
-
-def predict_url_ml(features_dict):
-    # URL ML removed — use heuristics only
-    return 0.0
-
-
-    # Predict probability
-    prob = url_model.predict_proba(df)[0][1]
-    return prob
-
-
+# ============================================
+# EMAIL ML PREDICTION
+# ============================================
 def predict_email_ml(text):
     vector = email_tfidf.transform([text])
     prob = email_model.predict_proba(vector)[0][1]
     return prob
 
 
-
-# Hybrid Scoring
-
+# ============================================
+# HYBRID SCORING LOGIC
+# ============================================
 def calculate_score(features, ml_prob, input_type):
     h_score = 0
 
     if input_type == "url":
-        # URL Heuristics Only
-        if features.get('having_IPhaving_IP_Address'): h_score += 25
-        if features.get('URLURL_Length'): h_score += 10
-        if features.get('Shortining_Service'): h_score += 15
-        if features.get('having_At_Symbol'): h_score += 15
-        if features.get('double_slash_redirecting'): h_score += 10
-        if features.get('Prefix_Suffix'): h_score += 10
-        if features.get('having_Sub_Domain'): h_score += 15
-        if not features.get('HTTPS_token'): h_score += 20
-        if features.get('Statistical_report'): h_score += 20
+        # Pure Heuristic Scoring (NO ML)
+        if features['having_IPhaving_IP_Address']: h_score += 25
+        if features['URLURL_Length']: h_score += 10
+        if features['Shortining_Service']: h_score += 15
+        if features['having_At_Symbol']: h_score += 15
+        if features['double_slash_redirecting']: h_score += 10
+        if features['Prefix_Suffix']: h_score += 10
+        if features['having_Sub_Domain']: h_score += 15
+        if not features['HTTPS_token']: h_score += 20
+        if features['Statistical_report']: h_score += 20
 
         final_score = h_score
 
     else:
-        # EMAIL → ML + heuristic (all good)
-        if features.get('urgent_words'): h_score += 20
-        if features.get('phishing_words'): h_score += 20
-        if features.get('exclamation_count', 0) > 2: h_score += 10
-        if features.get('contains_html'): h_score += 15
-        if features.get('link_count', 0) > 2: h_score += 10
-        if features.get('sentiment', 0) < -0.3: h_score += 10
+        # EMAIL = ML + heuristics
+        if features['urgent_words']: h_score += 20
+        if features['phishing_words']: h_score += 20
+        if features['exclamation_count'] > 2: h_score += 10
+        if features['contains_html']: h_score += 15
+        if features['link_count'] > 2: h_score += 10
+        if features['sentiment'] < -0.3: h_score += 10
 
         h_score = min(h_score, 100)
-        final_score = (0.8 * ml_prob * 100) + (0.2 * h_score)
+        final_score = (0.6 * ml_prob * 100) + (0.4 * h_score)
 
     # Verdict
-    if final_score < 35:
+    if final_score < 30:
         verdict = "Safe"
     elif final_score < 60:
         verdict = "Suspicious"
@@ -175,16 +144,16 @@ def calculate_score(features, ml_prob, input_type):
     return final_score, verdict
 
 
-
-# Visualization
-
+# ============================================
+# VISUALISATION
+# ============================================
 def visualize_result(features, score, verdict):
-    keys = list(features.keys())
-    vals = [int(v) if isinstance(v, bool) else v for v in features.values()]
+    labels = list(features.keys())
+    values = [int(v) if isinstance(v, bool) else v for v in features.values()]
 
-    plt.figure(figsize=(8, 6))
-    plt.barh(keys, vals, color="skyblue")
-    plt.title(f"PhishShield Risk Analysis\nScore: {round(score,2)}% | Verdict: {verdict}")
+    plt.figure(figsize=(9, 6))
+    plt.barh(labels, values, color="orange")
+    plt.title(f"PhishShield Risk Analysis\nScore: {round(score,2)} | Verdict: {verdict}")
     plt.tight_layout()
     plt.savefig("screenshots/risk_chart.png")
     plt.close()
