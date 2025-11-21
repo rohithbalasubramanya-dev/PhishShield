@@ -155,10 +155,17 @@ Final Verdict
 
 ## 📊 Screenshots
 
-Add the following screenshots here:
-- **console_output.png**
-- **risk_chart.png**
-- **email_sample.png**
+## 📸 Screenshots
+
+### 🔹 1. Console Output
+![Console Output](screenshots/console_output.png)
+
+### 🔹 2. Risk Chart
+![Risk Chart](screenshots/risk_chart.png)
+
+### 🔹 3. Email Detection Example
+![Email Sample](screenshots/email_sample.png)
+
 
 
 
