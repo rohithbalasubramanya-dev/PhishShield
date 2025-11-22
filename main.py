@@ -12,7 +12,18 @@ def main():
     print("   AI-Powered Phishing Detection Tool   ")
     print("========================================\n")
 
-    user_input = input("Enter a URL or an Email text:\n\n> ")
+    #User Input """Fixes User's Multiline input for email"""
+    
+    print("Enter email text (press ENTER twice to finish):")
+    lines = []
+    while True:
+        line = input()
+        if line == "":                  
+            break
+        lines.append(line)
+
+    user_input = "\n".join(lines)
+
 
     # Decide if input is URL or Email
     if "http://" in user_input or "https://" in user_input or "www" in user_input:

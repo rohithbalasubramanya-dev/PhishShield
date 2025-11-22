@@ -109,29 +109,29 @@ def calculate_score(features, ml_prob, input_type):
 
     if input_type == "url":
         # Pure Heuristic Scoring (NO ML)
-        if features['having_IPhaving_IP_Address']: h_score += 25
-        if features['URLURL_Length']: h_score += 10
-        if features['Shortining_Service']: h_score += 15
-        if features['having_At_Symbol']: h_score += 15
-        if features['double_slash_redirecting']: h_score += 10
-        if features['Prefix_Suffix']: h_score += 10
-        if features['having_Sub_Domain']: h_score += 15
-        if not features['HTTPS_token']: h_score += 20
-        if features['Statistical_report']: h_score += 20
+        if features['having_IPhaving_IP_Address']: h_score += 30
+        if features['URLURL_Length']: h_score += 5
+        if features['Shortining_Service']: h_score += 20
+        if features['having_At_Symbol']: h_score += 10
+        if features['double_slash_redirecting']: h_score += 15
+        if features['Prefix_Suffix']: h_score += 15
+        if features['having_Sub_Domain']: h_score += 20
+        if not features['HTTPS_token']: h_score += 30
+        if features['Statistical_report']: h_score += 10
 
         final_score = h_score
 
     else:
         # EMAIL = ML + heuristics
         if features['urgent_words']: h_score += 20
-        if features['phishing_words']: h_score += 20
-        if features['exclamation_count'] > 2: h_score += 10
-        if features['contains_html']: h_score += 15
-        if features['link_count'] > 2: h_score += 10
-        if features['sentiment'] < -0.3: h_score += 10
+        if features['phishing_words']: h_score += 25
+        if features['exclamation_count'] > 2: h_score += 15
+        if features['contains_html']: h_score += 20
+        if features['link_count'] > 2: h_score += 15
+        if features['sentiment'] < -0.3: h_score += 35
 
         h_score = min(h_score, 100)
-        final_score = (0.6 * ml_prob * 100) + (0.4 * h_score)
+        final_score = (0.8 * ml_prob * 100) - (0.2 * h_score)
 
     # Verdict
     if final_score < 30:
