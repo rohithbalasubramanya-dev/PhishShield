@@ -30,7 +30,7 @@ The system uses:
 
 ### 🧠 Hybrid scoring  
 - URLs → Heuristic score only  
-- Emails → 60% ML + 40% heuristics  
+- Emails → 80% ML + 20% heuristics  
 
 ### 📊 Visualization  
 Generates a risk chart (`risk_chart.png`) for every scan.
