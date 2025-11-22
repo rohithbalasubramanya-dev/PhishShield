@@ -58,7 +58,7 @@ PhishShield/
 │   ├── phishing_emails.csv
 │
 ├── screenshots/
-│   ├── console_output.png
+│   ├── url_sample.png
 │   ├── risk_chart.png
 │   ├── email_sample.png
 │
