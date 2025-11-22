@@ -35,8 +35,6 @@ The system uses:
 ### 📊 Visualization  
 Generates a risk chart (`risk_chart.png`) for every scan.
 
-This project fully meets all requirements of the **Jackfruit Mini Project Rubric**. :contentReference[oaicite:1]{index=1}
-
 ---
 
 ## 📂 Folder Structure
@@ -152,8 +150,6 @@ Final Verdict
 ```
 
 ---
-
-## 📊 Screenshots
 
 ## 📸 Screenshots
 
