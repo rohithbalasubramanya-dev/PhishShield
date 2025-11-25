@@ -5,3 +5,5 @@ joblib
 matplotlib
 tldextract
 textblob
+streamlit
+plotly
