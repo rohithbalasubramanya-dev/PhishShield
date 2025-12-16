@@ -24,7 +24,7 @@ def analyze_risk(text, subject):
     # A. Urgency Detection (Social Engineering)
     urgent_patterns = [
         "immediately", "action required", "suspended", "verify your account",
-        "24 hours", "urgently", "unauthorized access"
+        "24 hours", "urgently", "unauthorized access","offer closes soon"
     ]
     for word in urgent_patterns:
         if word in full_text:
